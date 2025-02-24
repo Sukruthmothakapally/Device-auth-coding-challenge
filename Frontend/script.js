@@ -17,12 +17,12 @@ async function handleAction(action) {
     }
 
     errorMessage.textContent = "";
-    
+
     try {
         const response = await fetch(`http://127.0.0.1:8000/${action}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email }),
+            body: JSON.stringify({ email }), 
         });
 
         const data = await response.json();

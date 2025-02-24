@@ -7,6 +7,7 @@ def add_user(email: str):
     user_id = len(users_db) + 1
     users_db[email] = {"id": user_id, "email": email}
     return users_db[email]
+
 # retrieves a user by email.
 def get_user(email: str):
     

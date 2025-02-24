@@ -1,24 +1,23 @@
 from fastapi import APIRouter, HTTPException
-from models import User
+from models import UserCreate, UserLogin
 from storage import add_user, get_user
 from utils import is_valid_email
 
 router = APIRouter()
 
-# endpoint 1: on register button
-@router.post("/register", response_model=User)
-async def register(email: str):
-    if not is_valid_email(email):
+@router.post("/register", response_model=UserCreate)
+async def register(user: UserCreate):
+    if not is_valid_email(user.email):
         raise HTTPException(status_code=400, detail="Invalid email format")
 
-    if get_user(email):
+    if get_user(user.email):
         raise HTTPException(status_code=400, detail="User already registered")
 
-    user = add_user(email)
-    return user
+    new_user = add_user(user.email)
+    return new_user
 
 # endpoint 2: on login button
-@router.post("/login", response_model=User)
+@router.post("/login", response_model=UserLogin)
 async def login(email: str):
     if not is_valid_email(email):
         raise HTTPException(status_code=400, detail="Invalid email format")
