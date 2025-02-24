@@ -22,16 +22,19 @@ async function handleAction(action) {
         const response = await fetch(`http://127.0.0.1:8000/${action}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email }), 
+            body: JSON.stringify({ email }),
         });
 
         const data = await response.json();
-        
+
         if (!response.ok) {
             throw new Error(data.detail);
         }
 
         alert(`${action} successful! User ID: ${data.id}`);
+
+        // Redirect to the welcome page
+        window.location.href = `welcome.html?email=${email}`;
     } catch (error) {
         errorMessage.textContent = error.message;
     }
