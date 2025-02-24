@@ -35,15 +35,14 @@ Ensure that only the legitimate device owner can submit their email through this
 3. After successful biometric verification, generate a **time-bound, device-bound token** (not cryptographically signed).
 
 ### Interaction Flow
-```mermaid
-graph TD;
-  User-->BrowserApp[Requests Access];
-  BrowserApp-->DeviceOS[Triggers Biometric Prompt];
-  DeviceOS-->BrowserApp[Returns "Success"];
-  BrowserApp-->Server[Sends {userId, deviceId, expires}];
-  Server-->Server[Checks: Is deviceId trusted? Is the token expired?];
-  Server-->|Access Granted or Denied|BrowserApp;
-```
+User->>Browser App: Requests access
+Browser App->>Device OS: Triggers biometric prompt
+Device OS-->>Browser App: Returns "success"
+Browser App->>Server: Sends {userId, deviceId, expires}
+Server->>Server: Checks:
+    1. Is deviceId trusted?
+    2. Is the token expired?
+Server-->>Browser App: Grants access or denies
 
 ## Deliverables
 1. **Video Walkthrough**: Record a video with voiceover explaining your solution.
