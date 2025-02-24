@@ -30,12 +30,8 @@ async function handleAction(action) {
         if (!response.ok) {
             throw new Error(data.detail);
         }
-
-        alert(`${action} successful! User ID: ${data.id}`);
-
-        if (action === "login" || action === "register") {
-            window.location.href = `welcome.html?email=${email}`;
-        }
+        
+        window.location.href = `welcome.html?email=${email}`;
     } catch (error) {
         errorMessage.textContent = error.message;
     }
