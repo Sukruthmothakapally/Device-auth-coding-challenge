@@ -13,7 +13,7 @@ function isValidEmail(email) {
 registerBtn.addEventListener("click", () => handleAction("register"));
 loginBtn.addEventListener("click", () => handleAction("login"));
 
-// Register/Login actions
+// function for Register/Login actions
 function handleAction(action) {
     const email = emailInput.value.trim();
 
