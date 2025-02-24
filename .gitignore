@@ -72,3 +72,6 @@ poetry.lock
 # Ignore test output
 tests/__pycache__/
 test_output/
+cert.pem
+csr.pem
+key.pem
