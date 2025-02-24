@@ -1,20 +1,9 @@
-// Selecting elements
 const emailInput = document.getElementById("emailInput");
 const registerBtn = document.getElementById("registerBtn");
 const loginBtn = document.getElementById("loginBtn");
 const errorMessage = document.getElementById("error-message");
 
-// Function to validate email format
-function isValidEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-// Event listeners for buttons
-registerBtn.addEventListener("click", () => handleAction("register"));
-loginBtn.addEventListener("click", () => handleAction("login"));
-
-// function for Register/Login actions
-function handleAction(action) {
+async function handleAction(action) {
     const email = emailInput.value.trim();
 
     if (!email) {
@@ -22,11 +11,31 @@ function handleAction(action) {
         return;
     }
 
-    if (!isValidEmail(email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         errorMessage.textContent = "Invalid email format!";
         return;
     }
 
     errorMessage.textContent = "";
-    alert(`You clicked ${action} with email: ${email}`);
+    
+    try {
+        const response = await fetch(`http://127.0.0.1:8000/${action}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.detail);
+        }
+
+        alert(`${action} successful! User ID: ${data.id}`);
+    } catch (error) {
+        errorMessage.textContent = error.message;
+    }
 }
+
+registerBtn.addEventListener("click", () => handleAction("register"));
+loginBtn.addEventListener("click", () => handleAction("login"));
