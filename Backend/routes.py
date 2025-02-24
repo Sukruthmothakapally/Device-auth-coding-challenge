@@ -18,12 +18,13 @@ async def register(user: UserCreate):
 
 # endpoint 2: on login button
 @router.post("/login", response_model=UserLogin)
-async def login(email: str):
-    if not is_valid_email(email):
+async def login(user: UserLogin):
+    if not is_valid_email(user.email):
         raise HTTPException(status_code=400, detail="Invalid email format")
 
-    user = get_user(email)
-    if not user:
+    user_data = get_user(user.email)
+    if not user_data:
         raise HTTPException(status_code=404, detail="User not found. Please register first.")
 
-    return user
+    return user_data
+

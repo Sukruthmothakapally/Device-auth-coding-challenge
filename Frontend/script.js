@@ -33,8 +33,9 @@ async function handleAction(action) {
 
         alert(`${action} successful! User ID: ${data.id}`);
 
-        // Redirect to the welcome page
-        window.location.href = `welcome.html?email=${email}`;
+        if (action === "login" || action === "register") {
+            window.location.href = `welcome.html?email=${email}`;
+        }
     } catch (error) {
         errorMessage.textContent = error.message;
     }
