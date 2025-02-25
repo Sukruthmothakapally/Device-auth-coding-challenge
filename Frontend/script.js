@@ -105,8 +105,8 @@ async function handleAction(action) {
     }
 
     try {
-        console.log(`Sending request to server: https://your-backend-url.com/${action}`);
-        const response = await fetch(`https://your-backend-url.com/${action}`, {
+        console.log(`Sending request to server: https://7518-73-231-49-218.ngrok-free.app/${action}`);
+        const response = await fetch(`https://7518-73-231-49-218.ngrok-free.app/${action}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
