@@ -57,8 +57,8 @@ async function handleRegistration() {
 
     const credentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
     window.localStorage.setItem("credentialId", credentialId);
-    const ApiUrl = process.env.FASTAPI_URL;
-    const response = await fetch(`${ApiUrl}/register`, {
+
+    const response = await fetch("https://16ab-73-231-49-218.ngrok-free.app/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, credentialId })
@@ -126,7 +126,7 @@ async function handleLogin() {
     console.log("Assertion obtained:", assertion);
 
     const signature = btoa(String.fromCharCode(...new Uint8Array(assertion.response.signature)));
-    const response = await fetch(`${ApiUrl}/login`, {
+    const response = await fetch("https://16ab-73-231-49-218.ngrok-free.app/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, assertion: signature })
