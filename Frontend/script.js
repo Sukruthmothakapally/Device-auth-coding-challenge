@@ -3,129 +3,146 @@ const registerBtn = document.getElementById("registerBtn");
 const loginBtn = document.getElementById("loginBtn");
 const errorMessage = document.getElementById("error-message");
 
-async function handleWindowsAuthentication(action) {
-    try {
-        console.log("Starting Windows Hello Authentication...");
+async function handleRegistration() {
+  const email = emailInput.value.trim();
+  if (!email) {
+    errorMessage.textContent = "Email is required!";
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errorMessage.textContent = "Invalid email format!";
+    return;
+  }
+  errorMessage.textContent = "";
 
-        if (!window.PublicKeyCredential) {
-            console.error("WebAuthn is not supported by this browser.");
-            errorMessage.textContent = "Your browser does not support WebAuthn.";
-            return false;
-        }
+  try {
+    console.log("Starting registration with Windows Hello...");
 
-        const isAvailable = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-        console.log("Is Windows Hello available? ", isAvailable);
-
-        if (!isAvailable) {
-            errorMessage.textContent = "Windows Hello authentication is not available on this device.";
-            return false;
-        }
-
-        const challengeBuffer = new Uint8Array(32);
-        window.crypto.getRandomValues(challengeBuffer);
-        console.log("Generated challenge buffer: ", challengeBuffer);
-
-        const authOptions = {
-            challenge: challengeBuffer,
-            timeout: 30000,
-            rpId: "device-auth-coding-challenge.vercel.app", // Set current domain
-            userVerification: "required",
-            authenticatorSelection: {
-                authenticatorAttachment: "platform",
-                requireResidentKey: false,
-                userVerification: "required"
-            },
-            pubKeyCredParams: [
-                { type: "public-key", alg: -7 },   // ES256
-                { type: "public-key", alg: -257 }  // RS256
-            ]
-        };
-
-        const credential = await navigator.credentials.get({ publicKey: authOptions });
-        console.log("Credential received: ", credential);
-
-        if (credential) {
-            console.log("Windows Hello authentication successful!");
-            alert("Windows authentication successful!");
-            return true;
-        }
-    } catch (error) {
-        console.error("Authentication error:", error);
-
-        if (error.name === "NotAllowedError") {
-            console.warn("User cancelled authentication or denied permission.");
-            alert("Authentication was cancelled or denied.");
-        } else if (error.name === "NotSupportedError") {
-            console.warn("Windows Hello might not be configured properly.");
-            alert("Your Windows authentication method isn't properly configured.");
-        } else {
-            console.error(`Authentication failed: ${error.message}`);
-            alert(`Authentication failed: ${error.message || "Please try again."}`);
-        }
-
-        return false;
+    if (!window.PublicKeyCredential) {
+      errorMessage.textContent = "WebAuthn is not supported by your browser.";
+      return;
     }
+
+    const challengeBuffer = new Uint8Array(32);
+    window.crypto.getRandomValues(challengeBuffer);
+
+    const publicKeyCredentialCreationOptions = {
+      challenge: challengeBuffer,
+      rp: {
+        name: "Your App Name",
+        id: "device-auth-coding-challenge.vercel.app"
+      },
+      user: {
+
+        id: Uint8Array.from(email, c => c.charCodeAt(0)),
+        name: email,
+        displayName: email
+      },
+      pubKeyCredParams: [
+        { type: "public-key", alg: -7 },   // ES256
+        { type: "public-key", alg: -257 }  // RS256
+      ],
+      authenticatorSelection: {
+        authenticatorAttachment: "platform", 
+        userVerification: "required"
+      },
+      timeout: 30000,
+      attestation: "none" 
+    };
+
+    const credential = await navigator.credentials.create({
+      publicKey: publicKeyCredentialCreationOptions
+    });
+    console.log("Credential created:", credential);
+
+    const credentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+    window.localStorage.setItem("credentialId", credentialId);
+
+    const response = await fetch("https://7518-73-231-49-218.ngrok-free.app/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, credentialId })
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Server registration failed.");
+    }
+
+    console.log("Registration successful.");
+    window.location.href = `welcome.html?email=${email}`;
+  } catch (error) {
+    console.error("Registration error:", error);
+    errorMessage.textContent = error.message;
+  }
 }
 
-async function handleAction(action) {
-    const email = emailInput.value.trim();
-    console.log(`Handling action: ${action} for email: ${email}`);
+async function handleLogin() {
+  const email = emailInput.value.trim();
+  if (!email) {
+    errorMessage.textContent = "Email is required!";
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errorMessage.textContent = "Invalid email format!";
+    return;
+  }
+  errorMessage.textContent = "";
 
-    if (!email) {
-        console.warn("Email is required but missing.");
-        errorMessage.textContent = "Email is required!";
-        return;
+  try {
+    console.log("Starting Windows Hello authentication for login...");
+
+    if (!window.PublicKeyCredential) {
+      errorMessage.textContent = "WebAuthn is not supported by your browser.";
+      return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        console.warn("Invalid email format entered.");
-        errorMessage.textContent = "Invalid email format!";
-        return;
+
+    const challengeBuffer = new Uint8Array(32);
+    window.crypto.getRandomValues(challengeBuffer);
+
+    const storedCredentialId = window.localStorage.getItem("credentialId");
+    if (!storedCredentialId) {
+      throw new Error("No registered credential found. Please register first.");
     }
 
-    errorMessage.textContent = "";
+    const credIdUint8 = Uint8Array.from(atob(storedCredentialId), c => c.charCodeAt(0));
 
-    if (action === "login") {
-        console.log("Initiating login process with Windows Hello...");
-        const isAuthenticated = await handleWindowsAuthentication(action);
-        if (!isAuthenticated) {
-            console.log("Authentication failed. Stopping login process.");
-            return;
+    const publicKeyCredentialRequestOptions = {
+      challenge: challengeBuffer,
+      timeout: 30000,
+      rpId: "device-auth-coding-challenge.vercel.app",
+      userVerification: "required",
+      allowCredentials: [
+        {
+          type: "public-key",
+          id: credIdUint8,
+          transports: ["internal"]
         }
+      ]
+    };
+
+    const assertion = await navigator.credentials.get({
+      publicKey: publicKeyCredentialRequestOptions
+    });
+    console.log("Assertion obtained:", assertion);
+
+    const signature = btoa(String.fromCharCode(...new Uint8Array(assertion.response.signature)));
+    const response = await fetch("https://7518-73-231-49-218.ngrok-free.app/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, assertion: signature })
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Server login failed.");
     }
 
-    try {
-        console.log(`Sending request to server: https://7518-73-231-49-218.ngrok-free.app/${action}`);
-        
-        const response = await fetch(`https://7518-73-231-49-218.ngrok-free.app/${action}`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ email })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();  
-
-            if (response.status === 400 && errorData.detail) {
-                if (errorData.detail === "User already registered") {
-                    throw new Error("This user is already registered. Please log in.");
-                }
-            }
-
-            throw new Error(`Server error: ${response.status} - ${errorData.detail || "An unknown error occurred."}`);
-        }
-
-        const data = await response.json();
-        console.log("Server response data: ", data);
-
-        console.log("Redirecting to welcome page...");
-        window.location.href = `welcome.html?email=${email}`;
-    } catch (error) {
-        console.error("Error in handleAction:", error);
-        errorMessage.textContent = error.message; 
-    }
+    console.log("Login successful.");
+    window.location.href = `welcome.html?email=${email}`;
+  } catch (error) {
+    console.error("Login error:", error);
+    errorMessage.textContent = error.message;
+  }
 }
 
-registerBtn.addEventListener("click", () => handleAction("register"));
-loginBtn.addEventListener("click", () => handleAction("login"));
+registerBtn.addEventListener("click", handleRegistration);
+loginBtn.addEventListener("click", handleLogin);
