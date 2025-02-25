@@ -3,38 +3,60 @@ const registerBtn = document.getElementById("registerBtn");
 const loginBtn = document.getElementById("loginBtn");
 const errorMessage = document.getElementById("error-message");
 
-async function handleWindowsAuthentication() {
+async function handleWindowsAuthentication(action) {
     try {
+        console.log("Starting Windows Hello Authentication...");
+
         if (!window.PublicKeyCredential) {
+            console.error("WebAuthn is not supported by this browser.");
             errorMessage.textContent = "Your browser does not support WebAuthn.";
             return false;
         }
 
         const isAvailable = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        console.log("Is Windows Hello available? ", isAvailable);
+
         if (!isAvailable) {
             errorMessage.textContent = "Windows Hello authentication is not available on this device.";
             return false;
         }
 
-        const challengeBuffer = Uint8Array.from(window.crypto.getRandomValues(new Uint8Array(32)));
+        const challengeBuffer = new Uint8Array(32);
+        window.crypto.getRandomValues(challengeBuffer);
+        console.log("Generated challenge buffer: ", challengeBuffer);
 
         const authOptions = {
             challenge: challengeBuffer,
-            timeout: 30000, 
-            rpId: "localhost",
+            timeout: 30000,
+            rpId: "device-auth-coding-challenge.vercel.app", // need to set domain here
             userVerification: "required",
             authenticatorSelection: {
                 authenticatorAttachment: "platform",
-                requireResidentKey: true,
+                requireResidentKey: false,
                 userVerification: "required"
             },
-            allowCredentials: [],
-            mediation: "required"
+            pubKeyCredParams: [
+                { type: "public-key", alg: -7 },   // ES256
+                { type: "public-key", alg: -257 }  // RS256
+            ]
         };
 
+        if (action === "login") {
+            const credentials = await fetch(`https://your-backend-url.com/get-credentials?email=${emailInput.value.trim()}`);
+            const credentialData = await credentials.json();
+            
+            if (credentialData && credentialData.allowCredentials) {
+                authOptions.allowCredentials = credentialData.allowCredentials;
+            }
+        }
+
+        console.log("WebAuthn Request Options: ", authOptions);
+
         const credential = await navigator.credentials.get({ publicKey: authOptions });
+        console.log("Credential received: ", credential);
 
         if (credential) {
+            console.log("Windows Hello authentication successful!");
             alert("Windows authentication successful!");
             return true;
         }
@@ -42,10 +64,13 @@ async function handleWindowsAuthentication() {
         console.error("Authentication error:", error);
 
         if (error.name === "NotAllowedError") {
+            console.warn("User cancelled authentication or denied permission.");
             alert("Authentication was cancelled or denied.");
         } else if (error.name === "NotSupportedError") {
+            console.warn("Windows Hello might not be configured properly.");
             alert("Your Windows authentication method isn't properly configured.");
         } else {
+            console.error(`Authentication failed: ${error.message}`);
             alert(`Authentication failed: ${error.message || "Please try again."}`);
         }
 
@@ -55,11 +80,15 @@ async function handleWindowsAuthentication() {
 
 async function handleAction(action) {
     const email = emailInput.value.trim();
+    console.log(`Handling action: ${action} for email: ${email}`);
+
     if (!email) {
+        console.warn("Email is required but missing.");
         errorMessage.textContent = "Email is required!";
         return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        console.warn("Invalid email format entered.");
         errorMessage.textContent = "Invalid email format!";
         return;
     }
@@ -67,14 +96,17 @@ async function handleAction(action) {
     errorMessage.textContent = "";
 
     if (action === "login") {
-        const isAuthenticated = await handleWindowsAuthentication();
+        console.log("Initiating login process with Windows Hello...");
+        const isAuthenticated = await handleWindowsAuthentication(action);
         if (!isAuthenticated) {
+            console.log("Authentication failed. Stopping login process.");
             return;
         }
     }
 
     try {
-        const response = await fetch(`http://127.0.0.1:8000/${action}`, {
+        console.log(`Sending request to server: https://your-backend-url.com/${action}`);
+        const response = await fetch(`https://your-backend-url.com/${action}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -82,13 +114,20 @@ async function handleAction(action) {
             body: JSON.stringify({ email })
         });
 
+        console.log(`Response status: ${response.status}`);
+
         const data = await response.json();
+        console.log("Server response data: ", data);
+
         if (!response.ok) {
+            console.error("Server responded with an error:", data.detail);
             throw new Error(data.detail);
         }
 
+        console.log("Redirecting to welcome page...");
         window.location.href = `welcome.html?email=${email}`;
     } catch (error) {
+        console.error("Error in handleAction:", error);
         errorMessage.textContent = error.message;
     }
 }
