@@ -14,18 +14,14 @@ async function handleRegistration() {
     return;
   }
   errorMessage.textContent = "";
-
   try {
     console.log("Starting registration with Windows Hello...");
-
     if (!window.PublicKeyCredential) {
       errorMessage.textContent = "WebAuthn is not supported by your browser.";
       return;
     }
-
     const challengeBuffer = new Uint8Array(32);
     window.crypto.getRandomValues(challengeBuffer);
-
     const publicKeyCredentialCreationOptions = {
       challenge: challengeBuffer,
       rp: {
@@ -33,7 +29,6 @@ async function handleRegistration() {
         id: "device-auth-coding-challenge.vercel.app"
       },
       user: {
-
         id: Uint8Array.from(email, c => c.charCodeAt(0)),
         name: email,
         displayName: email
@@ -49,16 +44,13 @@ async function handleRegistration() {
       timeout: 30000,
       attestation: "none" 
     };
-
     const credential = await navigator.credentials.create({
       publicKey: publicKeyCredentialCreationOptions
     });
     console.log("Credential created:", credential);
-
     const credentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
     window.localStorage.setItem("credentialId", credentialId);
-
-    const response = await fetch("https://16ab-73-231-49-218.ngrok-free.app/register", {
+    const response = await fetch("https://1f71-73-231-49-218.ngrok-free.app/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, credentialId })
@@ -67,7 +59,6 @@ async function handleRegistration() {
       const errorData = await response.json();
       throw new Error(errorData.detail || "Server registration failed.");
     }
-
     console.log("Registration successful.");
     window.location.href = `welcome.html?email=${email}`;
   } catch (error) {
@@ -87,25 +78,22 @@ async function handleLogin() {
     return;
   }
   errorMessage.textContent = "";
-
   try {
     console.log("Starting Windows Hello authentication for login...");
-
     if (!window.PublicKeyCredential) {
       errorMessage.textContent = "WebAuthn is not supported by your browser.";
       return;
     }
-
+ 
+    errorMessage.textContent = "Initiating Windows Hello authentication...";
+    
     const challengeBuffer = new Uint8Array(32);
     window.crypto.getRandomValues(challengeBuffer);
-
     const storedCredentialId = window.localStorage.getItem("credentialId");
     if (!storedCredentialId) {
       throw new Error("No registered credential found. Please register first.");
     }
-
     const credIdUint8 = Uint8Array.from(atob(storedCredentialId), c => c.charCodeAt(0));
-
     const publicKeyCredentialRequestOptions = {
       challenge: challengeBuffer,
       timeout: 30000,
@@ -123,19 +111,28 @@ async function handleLogin() {
     const assertion = await navigator.credentials.get({
       publicKey: publicKeyCredentialRequestOptions
     });
-    console.log("Assertion obtained:", assertion);
+    
+    console.log("Biometric authentication succeeded.");
+    errorMessage.textContent = "Biometric authentication successful. Generating device token...";
 
-    const signature = btoa(String.fromCharCode(...new Uint8Array(assertion.response.signature)));
-    const response = await fetch("https://16ab-73-231-49-218.ngrok-free.app/login", {
+    const expiresDate = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes from now
+    const expiresISO = expiresDate.toISOString();
+
+    const device_id = storedCredentialId;
+
+    const loginPayload = { email, device_id, expires: expiresISO };
+    
+    const response = await fetch("https://1f71-73-231-49-218.ngrok-free.app/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, assertion: signature })
+      body: JSON.stringify(loginPayload)
     });
+    
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.detail || "Server login failed.");
     }
-
+    
     console.log("Login successful.");
     window.location.href = `welcome.html?email=${email}`;
   } catch (error) {
