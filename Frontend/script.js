@@ -29,8 +29,8 @@ async function handleRegistration() {
     const publicKeyCredentialCreationOptions = {
       challenge: challengeBuffer,
       rp: {
-        name: "Your App Name",
-        id: "device-auth-coding-challenge.vercel.app"
+        name: "Biometrics Auth",
+        id: "a391-73-231-49-218.ngrok-free.app"
       },
       user: {
 
@@ -109,7 +109,7 @@ async function handleLogin() {
     const publicKeyCredentialRequestOptions = {
       challenge: challengeBuffer,
       timeout: 30000,
-      rpId: "device-auth-coding-challenge.vercel.app",
+      rpId: "a391-73-231-49-218.ngrok-free.app",
       userVerification: "required",
       allowCredentials: [
         {
