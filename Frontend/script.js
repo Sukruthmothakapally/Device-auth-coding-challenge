@@ -94,7 +94,7 @@ async function handleAction(action) {
     }
 
     try {
-        console.log(`Sending login request to server: https://7518-73-231-49-218.ngrok-free.app/${action}`);
+        console.log(`Sending request to server: https://7518-73-231-49-218.ngrok-free.app/${action}`);
         
         const response = await fetch(`https://7518-73-231-49-218.ngrok-free.app/${action}`, {
             method: "POST",
@@ -105,8 +105,15 @@ async function handleAction(action) {
         });
 
         if (!response.ok) {
-            const errorData = await response.text();
-            throw new Error(`Server error: ${response.status} - ${errorData}`);
+            const errorData = await response.json();  
+
+            if (response.status === 400 && errorData.detail) {
+                if (errorData.detail === "User already registered") {
+                    throw new Error("This user is already registered. Please log in.");
+                }
+            }
+
+            throw new Error(`Server error: ${response.status} - ${errorData.detail || "An unknown error occurred."}`);
         }
 
         const data = await response.json();
@@ -116,7 +123,7 @@ async function handleAction(action) {
         window.location.href = `welcome.html?email=${email}`;
     } catch (error) {
         console.error("Error in handleAction:", error);
-        errorMessage.textContent = error.message;
+        errorMessage.textContent = error.message; 
     }
 }
 
