@@ -42,7 +42,7 @@ async function handleWindowsAuthentication(action) {
         };
 
         if (action === "login") {
-            const credentials = await fetch(`https://your-backend-url.com/get-credentials?email=${emailInput.value.trim()}`);
+            const credentials = await fetch(`https://7518-73-231-49-218.ngrok-free.app/get-credentials?email=${emailInput.value.trim()}`);
             const credentialData = await credentials.json();
             
             if (credentialData && credentialData.allowCredentials) {
