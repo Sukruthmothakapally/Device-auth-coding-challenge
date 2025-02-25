@@ -2,23 +2,40 @@
 import re
 from datetime import datetime, timedelta
 
-# basic email validation
-def is_valid_email(email: str) -> bool:
-    return bool(re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", email))
+import logging
+import re
+from datetime import datetime, timedelta
 
-# In-memory token store
+logger = logging.getLogger(__name__)
+
+# helper function for basic email validation
+def is_valid_email(email: str) -> bool:
+    is_valid = bool(re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", email))
+    logger.debug(f"Email validation for {email}: {is_valid}")
+    return is_valid
+
 tokens_db = {}
 
-# Helper function to generate a device-bound token
+# helper function to generate a device-bound token
 def generate_device_token(user_id: int, device_id: str):
-    expires = datetime() + timedelta(minutes=15)  # Token expires in 15 minutes
+    expires = datetime() + timedelta(minutes=15)
     token = {"user_id": user_id, "device_id": device_id, "expires": expires}
     tokens_db[device_id] = token
+
+    logger.info(f"Generated token for device {device_id} with expiration at {expires}")
+    
     return token
 
-# Helper function to validate the device token
+# helper function to validate the device token
 def validate_device_token(device_id: str):
     token = tokens_db.get(device_id)
-    if token and token["expires"] > datetime():
-        return token
+    if token:
+        logger.debug(f"Token found for device {device_id}: {token}")
+        if token["expires"] > datetime():
+            logger.debug(f"Token for device {device_id} is valid.")
+            return token
+        else:
+            logger.warning(f"Token for device {device_id} has expired.")
+    else:
+        logger.warning(f"No token found for device {device_id}.")
     return None
