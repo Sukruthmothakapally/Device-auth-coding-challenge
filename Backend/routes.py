@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 from models import UserCreate, UserLogin, User 
 from storage import add_user, get_user
 from utils import is_valid_email
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -38,16 +38,10 @@ async def login(user: UserLogin):
         raise HTTPException(status_code=404, detail="User not found. Please register first.")
     
     if user.device_id and user.expires:
-        try:
-            expires_str = user.expires
-            if expires_str.endswith('Z'):
-                expires_str = expires_str.replace('Z', '+00:00')
-            client_expires = datetime.fromisoformat(expires_str)
-        except Exception as e:
-            logger.error(f"Invalid expiration format for device token: {user.expires}")
-            raise HTTPException(status_code=400, detail="Invalid token expiration format")
-        
-        if client_expires < datetime.utcnow():
+        # Pydantic already parses the ISO date string into a datetime object.
+        client_expires = user.expires
+        now = datetime.now(timezone.utc)
+        if client_expires < now:
             logger.warning(f"Token expired: device_id {user.device_id} with expiration {client_expires}")
             raise HTTPException(status_code=401, detail="Authentication failed or token expired")
     else:
