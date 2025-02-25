@@ -28,7 +28,7 @@ async function handleWindowsAuthentication(action) {
         const authOptions = {
             challenge: challengeBuffer,
             timeout: 30000,
-            rpId: "device-auth-coding-challenge.vercel.app", // need to set current domain here
+            rpId: "device-auth-coding-challenge.vercel.app", // Set current domain
             userVerification: "required",
             authenticatorSelection: {
                 authenticatorAttachment: "platform",
@@ -40,17 +40,6 @@ async function handleWindowsAuthentication(action) {
                 { type: "public-key", alg: -257 }  // RS256
             ]
         };
-
-        if (action === "login") {
-            const credentials = await fetch(`https://7518-73-231-49-218.ngrok-free.app/get-credentials?email=${emailInput.value.trim()}`);
-            const credentialData = await credentials.json();
-            
-            if (credentialData && credentialData.allowCredentials) {
-                authOptions.allowCredentials = credentialData.allowCredentials;
-            }
-        }
-
-        console.log("WebAuthn Request Options: ", authOptions);
 
         const credential = await navigator.credentials.get({ publicKey: authOptions });
         console.log("Credential received: ", credential);
@@ -105,7 +94,8 @@ async function handleAction(action) {
     }
 
     try {
-        console.log(`Sending request to server: https://7518-73-231-49-218.ngrok-free.app/${action}`);
+        console.log(`Sending login request to server: https://7518-73-231-49-218.ngrok-free.app/${action}`);
+        
         const response = await fetch(`https://7518-73-231-49-218.ngrok-free.app/${action}`, {
             method: "POST",
             headers: {
@@ -114,15 +104,13 @@ async function handleAction(action) {
             body: JSON.stringify({ email })
         });
 
-        console.log(`Response status: ${response.status}`);
+        if (!response.ok) {
+            const errorData = await response.text();
+            throw new Error(`Server error: ${response.status} - ${errorData}`);
+        }
 
         const data = await response.json();
         console.log("Server response data: ", data);
-
-        if (!response.ok) {
-            console.error("Server responded with an error:", data.detail);
-            throw new Error(data.detail);
-        }
 
         console.log("Redirecting to welcome page...");
         window.location.href = `welcome.html?email=${email}`;
