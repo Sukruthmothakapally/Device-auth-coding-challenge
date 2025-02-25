@@ -137,7 +137,11 @@ async function handleLogin() {
     window.location.href = `welcome.html?email=${email}`;
   } catch (error) {
     console.error("Login error:", error);
-    errorMessage.textContent = error.message;
+    if (error.name === "NotAllowedError") {
+      errorMessage.textContent = "Authentication was canceled or timed out. Please try again.";
+    } else {
+      errorMessage.textContent = error.message;
+    }
   }
 }
 

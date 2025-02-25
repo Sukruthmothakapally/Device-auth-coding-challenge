@@ -39,7 +39,10 @@ async def login(user: UserLogin):
     
     if user.device_id and user.expires:
         try:
-            client_expires = datetime.fromisoformat(user.expires)
+            expires_str = user.expires
+            if expires_str.endswith('Z'):
+                expires_str = expires_str.replace('Z', '+00:00')
+            client_expires = datetime.fromisoformat(expires_str)
         except Exception as e:
             logger.error(f"Invalid expiration format for device token: {user.expires}")
             raise HTTPException(status_code=400, detail="Invalid token expiration format")
