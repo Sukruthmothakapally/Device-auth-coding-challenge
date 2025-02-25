@@ -28,7 +28,7 @@ async function handleWindowsAuthentication(action) {
         const authOptions = {
             challenge: challengeBuffer,
             timeout: 30000,
-            rpId: "device-auth-coding-challenge.vercel.app", // need to set domain here
+            rpId: "device-auth-coding-challenge.vercel.app", // need to set current domain here
             userVerification: "required",
             authenticatorSelection: {
                 authenticatorAttachment: "platform",
